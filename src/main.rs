@@ -1,8 +1,9 @@
 use std::io::{self, Write};
 use std::time::Duration;
 
-use chrono::{Local, NaiveDateTime, TimeZone, Utc};
 use anyhow::Result;
+use chrono::{Local, NaiveDateTime, TimeZone, Utc};
+use clap::Parser;
 
 use dnp3::link::{EndpointAddress, LinkErrorMode};
 use dnp3::tcp::{EndpointList, spawn_master_tcp_client};
@@ -12,6 +13,19 @@ use dnp3::master::{
     TimeSyncProcedure,
 };
 use dnp3::app::{ConnectStrategy, NullListener, Timestamp};
+
+/// Simple CLI for DNP3 time synchronization
+#[derive(Parser)]
+#[command(name = "dnp3-time-sync", about = "Synchronize time to a DNP3 outstation")]
+struct Config {
+    /// Outstation IP address and port (default: 10.152.152.152:20000)
+    #[arg(short, long, default_value = "10.152.152.152:20000")]
+    ip: String,
+
+    /// Desired date & time in 'YYYY-MM-DD HH:MM:SS' format (UTC)
+    #[arg(short, long)]
+    time: Option<String>,
+}
 
 // A ReadHandler that ignores all incoming data.
 struct NoopReadHandler;
@@ -33,42 +47,37 @@ impl AssociationInformation for NoopAssocInfo {}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
-    // 1) Show your PC time and prompt for the desired target time.
-    let now = Local::now();
-    println!("Local PC time is: {}", now.format("%Y-%m-%d %H:%M:%S"));
-    print!("Enter desired date & time (YYYY-MM-DD HH:MM:SS): ");
-    io::stdout().flush()?;
-    let mut buf = String::new();
-    io::stdin().read_line(&mut buf)?;
-    let naive = NaiveDateTime::parse_from_str(buf.trim(), "%Y-%m-%d %H:%M:%S")?;
-    // Convert to UTC, then to the dnp3 Timestamp (milliseconds since epoch).
-    let dt_utc = Utc
-        .from_local_datetime(&naive)
-        .single()
-        .ok_or_else(|| anyhow::anyhow!("ambiguous or invalid datetime"))?;
-    let ts = Timestamp::new(dt_utc.timestamp_millis() as u64);
+    // Parse CLI arguments
+    let cfg = Config::parse();
 
-    // 2) Build and spawn the master channel.
+    // Determine timestamp: either from CLI arg or interactive prompt
+    let ts = if let Some(ref t) = cfg.time {
+        parse_time(t)?
+    } else {
+        interactive_prompt()?
+    };
+
+    // Build and spawn the master channel
     let master_cfg = MasterChannelConfig::new(EndpointAddress::try_new(0)?);
     let mut channel = spawn_master_tcp_client(
         LinkErrorMode::Close,
         master_cfg,
-        EndpointList::new("10.152.152.152:20000".to_string(), &[]),
+        EndpointList::new(cfg.ip.clone(), &[]),
         ConnectStrategy::default(),
-        NullListener::create(),  // <-- explicitly use the null listener
+        NullListener::create(),
     );
 
-    // 3) Prepare an association config (disable auto-time-sync so we control it manually).
+    // Prepare association config (disable auto time-sync)
     let mut assoc_cfg = AssociationConfig::new(
-        /* disable unsolicited:     */ EventClasses::all(),
-        /* enable unsolicited:      */ EventClasses::all(),
-        /* startup integrity scan:  */ Classes::all(),
-        /* no automatic event scans:*/ EventClasses::none(),
+        EventClasses::all(),
+        EventClasses::all(),
+        Classes::all(),
+        EventClasses::none(),
     );
     assoc_cfg.auto_time_sync = None;
     assoc_cfg.keep_alive_timeout = Some(Duration::from_secs(60));
 
-    // 4) Add your outstation (link-address = 10), plugging in your custom time handler.
+    // Add the outstation association
     let mut association = channel
         .add_association(
             EndpointAddress::try_new(10)?,
@@ -79,15 +88,35 @@ async fn main() -> Result<()> {
         )
         .await?;
 
-    // 5) Enable the channel (opens the TCP connection).
+    // Enable the channel (opens TCP connection)
     channel.enable().await?;
 
-    // 6) Issue the LAN time-sync.
-    //    Our CustomTimeHandler::get_current_time will be called to provide the timestamp.
+    // Issue the LAN time-sync
     association
         .synchronize_time(TimeSyncProcedure::Lan)
         .await?;
 
-    println!("Time-sync command sent to outstation 10 (using your supplied timestamp).");
+    println!("Time-sync command sent to outstation (using your supplied timestamp).");
     Ok(())
+}
+
+/// Parse a time string into a DNP3 Timestamp (milliseconds since epoch)
+fn parse_time(s: &str) -> Result<Timestamp> {
+    let naive = NaiveDateTime::parse_from_str(s.trim(), "%Y-%m-%d %H:%M:%S")?;
+    let dt_utc = Utc
+        .from_local_datetime(&naive)
+        .single()
+        .ok_or_else(|| anyhow::anyhow!("ambiguous or invalid datetime"))?;
+    Ok(Timestamp::new(dt_utc.timestamp_millis() as u64))
+}
+
+/// Prompt the user interactively for the desired date & time
+fn interactive_prompt() -> Result<Timestamp> {
+    let now = Local::now();
+    println!("Local PC time is: {}", now.format("%Y-%m-%d %H:%M:%S"));
+    print!("Enter desired date & time (YYYY-MM-DD HH:MM:SS): ");
+    io::stdout().flush()?;
+    let mut buf = String::new();
+    io::stdin().read_line(&mut buf)?;
+    parse_time(&buf)
 }
