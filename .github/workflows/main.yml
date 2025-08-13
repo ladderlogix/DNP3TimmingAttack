@@ -18,12 +18,12 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            binary_name: your-app-name
-            asset_name: your-app-name-linux-x86_64
+            binary_name: dnp3time
+            asset_name: dnp3time-linux-x86_64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            binary_name: your-app-name.exe
-            asset_name: your-app-name-windows-x86_64.exe
+            binary_name: dnp3time.exe
+            asset_name: dnp3time.exe
 
     steps:
     - name: Checkout code
@@ -126,8 +126,8 @@ jobs:
           - Add bug fixes here
           
           ### Downloads
-          - **Windows**: `your-app-name-windows-x86_64.exe` (Code signed with Azure Trusted Signing)
-          - **Linux**: `your-app-name-linux-x86_64` (Unsigned - Azure doesn't support Linux ELF format)
+          - **Windows**: `dnp3time-windows-x86_64.exe` (Code signed with Azure Trusted Signing)
+          - **Linux**: `dnp3time-linux-x86_64` (Unsigned - Azure doesn't support Linux ELF format)
           
           All binaries include SHA256 checksums and digital signatures for verification.
 
@@ -138,8 +138,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: your-app-name-windows-x86_64.exe/your-app-name-windows-x86_64.exe
-        asset_name: your-app-name-windows-x86_64.exe
+        asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe
+        asset_name: dnp3time-windows-x86_64.exe
         asset_content_type: application/octet-stream
 
     - name: Upload Windows Checksum
@@ -148,8 +148,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: your-app-name-windows-x86_64.exe/your-app-name-windows-x86_64.exe.sha256
-        asset_name: your-app-name-windows-x86_64.exe.sha256
+        asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe.sha256
+        asset_name: dnp3time-windows-x86_64.exe.sha256
         asset_content_type: text/plain
 
     # Upload Linux assets
@@ -159,8 +159,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: your-app-name-linux-x86_64/your-app-name-linux-x86_64
-        asset_name: your-app-name-linux-x86_64
+        asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64
+        asset_name: dnp3time-linux-x86_64
         asset_content_type: application/octet-stream
 
     - name: Upload Linux Checksum
@@ -169,6 +169,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: your-app-name-linux-x86_64/your-app-name-linux-x86_64.sha256
-        asset_name: your-app-name-linux-x86_64.sha256
+        asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64.sha256
+        asset_name: dnp3time-linux-x86_64.sha256
         asset_content_type: text/plain
