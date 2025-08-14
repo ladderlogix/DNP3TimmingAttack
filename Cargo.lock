@@ -3,18 +3,6 @@
 version = 4
 
 [[package]]
-name = "DNP3Attacks"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "dnp3",
- "tokio",
- "windows",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -363,6 +351,18 @@ dependencies = [
  "tokio-serial",
  "tracing",
  "xxhash-rust",
+]
+
+[[package]]
+name = "dnp3time"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "dnp3",
+ "tokio",
+ "windows",
 ]
 
 [[package]]

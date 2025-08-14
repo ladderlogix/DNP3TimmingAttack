@@ -1,5 +1,5 @@
 [package]
-name = "DNP3Attacks"
+name = "dnp3time"
 version = "0.1.0"
 edition = "2021"
 
