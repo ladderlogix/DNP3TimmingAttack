@@ -46,7 +46,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }} --package dnp3time --bin dnp3time
+        run: cargo build --release --target ${{ matrix.target }} --bin dnp3time
 
       - name: Prepare binary (Linux)
         if: matrix.os == 'ubuntu-latest'
