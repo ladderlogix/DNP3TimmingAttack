@@ -26,149 +26,149 @@ jobs:
             asset_name: dnp3time-windows-x86_64.exe
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ matrix.target }}
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
-    - name: Build release binary
-      run: cargo build --release --target ${{ matrix.target }}
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }} --package dnp3time --bin dnp3time
 
-    - name: Prepare binary (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} ${{ matrix.asset_name }}
-        chmod +x ${{ matrix.asset_name }}
+      - name: Prepare binary (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} ${{ matrix.asset_name }}
+          chmod +x ${{ matrix.asset_name }}
 
-    - name: Prepare binary (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} ${{ matrix.asset_name }}
+      - name: Prepare binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} ${{ matrix.asset_name }}
 
-    # Azure Code Signing for Windows only (Azure doesn't support Linux ELF binaries)
-    - name: Sign Windows executable with Azure Trusted Signing
-      if: matrix.os == 'windows-latest'
-      uses: azure/trusted-signing-action@v0.5.1
-      with:
-        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-        endpoint: https://eus.codesigning.azure.net/
-        trusted-signing-account-name: HomelabMain
-        certificate-profile-name: Mainprofile
-        files-folder: .\
-        files-folder-filter: exe,dll
-        file-digest: SHA256
-        timestamp-rfc3161: http://timestamp.acs.microsoft.com
-        timestamp-digest: SHA256
+      # Azure Code Signing for Windows only (Azure doesn't support Linux ELF binaries)
+      - name: Sign Windows executable with Azure Trusted Signing
+        if: matrix.os == 'windows-latest'
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: HomelabMain
+          certificate-profile-name: Mainprofile
+          files-folder: .\
+          files-folder-filter: exe,dll
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
 
-    # Optional: Create checksums
-    - name: Generate checksums
-      run: |
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          certutil -hashfile ${{ matrix.asset_name }} SHA256 > ${{ matrix.asset_name }}.sha256
-        else
-          sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
-        fi
-      shell: bash
+      # Optional: Create checksums
+      - name: Generate checksums
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            certutil -hashfile ${{ matrix.asset_name }} SHA256 > ${{ matrix.asset_name }}.sha256
+          else
+            sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
+          fi
+        shell: bash
 
-    # Upload artifacts for the release job
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.asset_name }}
-        path: |
-          ${{ matrix.asset_name }}
-          ${{ matrix.asset_name }}.sha256
+      # Upload artifacts for the release job
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: |
+            ${{ matrix.asset_name }}
+            ${{ matrix.asset_name }}.sha256
 
   create-release:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-        body: |
-          ## Changes in this Release
-          
-          ### Features
-          - Add your release notes here
-          
-          ### Bug Fixes
-          - Add bug fixes here
-          
-          ### Downloads
-          - **Windows**: `dnp3time-windows-x86_64.exe` (Code signed with Azure Trusted Signing)
-          - **Linux**: `dnp3time-linux-x86_64` (Unsigned - Azure doesn't support Linux ELF format)
-          
-          All binaries include SHA256 checksums and digital signatures for verification.
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Changes in this Release
+            
+            ### Features
+            - Add your release notes here
+            
+            ### Bug Fixes
+            - Add bug fixes here
+            
+            ### Downloads
+            - **Windows**: `dnp3time-windows-x86_64.exe` (Code signed with Azure Trusted Signing)
+            - **Linux**: `dnp3time-linux-x86_64` (Unsigned - Azure doesn't support Linux ELF format)
+            
+            All binaries include SHA256 checksums and digital signatures for verification.
 
-    # Upload Windows assets
-    - name: Upload Windows Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe
-        asset_name: dnp3time-windows-x86_64.exe
-        asset_content_type: application/octet-stream
+      # Upload Windows assets
+      - name: Upload Windows Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe
+          asset_name: dnp3time-windows-x86_64.exe
+          asset_content_type: application/octet-stream
 
-    - name: Upload Windows Checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe.sha256
-        asset_name: dnp3time-windows-x86_64.exe.sha256
-        asset_content_type: text/plain
+      - name: Upload Windows Checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe.sha256
+          asset_name: dnp3time-windows-x86_64.exe.sha256
+          asset_content_type: text/plain
 
-    # Upload Linux assets
-    - name: Upload Linux Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64
-        asset_name: dnp3time-linux-x86_64
-        asset_content_type: application/octet-stream
+      # Upload Linux assets
+      - name: Upload Linux Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64
+          asset_name: dnp3time-linux-x86_64
+          asset_content_type: application/octet-stream
 
-    - name: Upload Linux Checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64.sha256
-        asset_name: dnp3time-linux-x86_64.sha256
-        asset_content_type: text/plain
+      - name: Upload Linux Checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64.sha256
+          asset_name: dnp3time-linux-x86_64.sha256
+          asset_content_type: text/plain
