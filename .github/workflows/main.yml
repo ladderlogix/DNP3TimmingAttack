@@ -9,6 +9,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build for ${{ matrix.os }}
@@ -46,7 +49,7 @@ jobs:
           ${{ runner.os }}-cargo-
 
     - name: Build release binary
-      run: cargo build --release --target ${{ matrix.target }}
+      run: cargo build --release --target ${{ matrix.target }} --package dnp3time --bin dnp3time
 
     - name: Prepare binary (Linux)
       if: matrix.os == 'ubuntu-latest'
@@ -99,6 +102,8 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating releases
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -106,14 +111,11 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release and Upload Assets
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
         body: |
@@ -129,46 +131,9 @@ jobs:
           - **Windows**: `dnp3time-windows-x86_64.exe` (Code signed with Azure Trusted Signing)
           - **Linux**: `dnp3time-linux-x86_64` (Unsigned - Azure doesn't support Linux ELF format)
           
-          All binaries include SHA256 checksums and digital signatures for verification.
-
-    # Upload Windows assets
-    - name: Upload Windows Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe
-        asset_name: dnp3time-windows-x86_64.exe
-        asset_content_type: application/octet-stream
-
-    - name: Upload Windows Checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe.sha256
-        asset_name: dnp3time-windows-x86_64.exe.sha256
-        asset_content_type: text/plain
-
-    # Upload Linux assets
-    - name: Upload Linux Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64
-        asset_name: dnp3time-linux-x86_64
-        asset_content_type: application/octet-stream
-
-    - name: Upload Linux Checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dnp3time-linux-x86_64/dnp3time-linux-x86_64.sha256
-        asset_name: dnp3time-linux-x86_64.sha256
-        asset_content_type: text/plain
+          All binaries include SHA256 checksums for verification.
+        files: |
+          dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe
+          dnp3time-windows-x86_64.exe/dnp3time-windows-x86_64.exe.sha256
+          dnp3time-linux-x86_64/dnp3time-linux-x86_64
+          dnp3time-linux-x86_64/dnp3time-linux-x86_64.sha256
