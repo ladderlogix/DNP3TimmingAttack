@@ -1,15 +1,19 @@
 [package]
 name = "dnp3time"
-version = "0.1.0"
-edition = "2021"
+version = "1.1.0"
+edition = "2024"
+description = """
+Allows you to set the system time using DNP3 time synchronization.
+"""
+authors = ["Stephen Glombicki <logix@ics.red>"]
+readme = "README.md"
+repository = "https://github.com/ladderlogix/DNP3TimmingAttack.git"
+license = "AGPL-3.0-only"
+keywords = ["dnp3"]
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 dnp3 = "1.6.0"
 anyhow = "1.0.98"
-windows = { version = "0.48.0", features = [
-    "Win32_Foundation",
-    "Win32_System_SystemInformation"
-] }
 chrono = { version = "0.4", features = ["clock"] }
 clap = { version = "4.5.40", features = ["derive"] }

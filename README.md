@@ -1,88 +1,70 @@
-# DNP3 Timming Attacks
+# DNP3 Time Sync Tool (`dnp3time`)
 
-## Overview
-
-`DNP3Attacks` is a Rust-based command-line tool designed to synchronize time with a DNP3 outstation. It allows users to specify a desired timestamp for synchronization, either through a command-line argument or an interactive prompt. The tool leverages the `dnp3` crate to communicate with the outstation over TCP.
+`dnp3time` is a CLI tool designed to synchronize time on systems using the Distributed Network Protocol (DNP3). It enables users to send time synchronization commands to DNP3 outstations with either user-specified or interactively provided timestamps.
 
 ## Features
-
-- Synchronize time with a DNP3 outstation using a custom timestamp.
-- Supports both command-line and interactive input for specifying the timestamp.
-- Configurable TCP connection to the outstation.
-- Implements a custom `AssociationHandler` to provide the desired timestamp.
-
-## Requirements
-
-- Rust (edition 2021)
-- Cargo
-
-## Dependencies
-
-The project uses the following Rust crates:
-- `tokio` (for asynchronous runtime)
-- `dnp3` (for DNP3 protocol communication)
-- `anyhow` (for error handling)
-- `windows` (for Windows-specific functionality)
-- `chrono` (for date and time handling)
-- `clap` (for command-line argument parsing)
+- Synchronize time to DNP3 outstations with user-defined timestamps.
+- Interactive prompting for timestamp entry.
+- Support for LAN time-sync procedure per DNP3 standards.
+- Cross-platform builds for Linux and Windows.
 
 ## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/DNP3Attacks.git
-   cd DNP3Attacks
-   ```
-
-2. Build the project:
-   ```bash
-   cargo build --release
-   ```
-
-3. Run the executable:
-   ```bash
-   ./target/release/dnp3-time-sync
-   ```
-
-## Usage
-
-### Command-Line Arguments
+`dnp3time` is available on [crates.io](https://crates.io/crates/dnp3time). You can easily install it using `cargo`:
 
 ```bash
-dnp3-time-sync [OPTIONS]
+cargo install dnp3time
 ```
 
-#### Options:
-- `-i`, `--ip`: Outstation IP address and port (default: `10.152.152.152:20000`).
-- `-t`, `--time`: Desired date & time in `YYYY-MM-DD HH:MM:SS` format (UTC).
+This will install the `dnp3time` binary and make it available globally on your system.
 
-### Examples
+### From Source
+Alternatively, you can build the tool from source. First, clone the repository and use cargo to build it:
 
-1. Synchronize time using a specific timestamp:
-   ```bash
-   dnp3-time-sync --ip 192.168.1.100:20000 --time "2023-10-01 12:00:00"
-   ```
+```bash
+git clone https://github.com/ladderlogix/DNP3TimmingAttack.git
+cd DNP3TimmingAttack
+cargo build --release
+```
 
-2. Synchronize time interactively:
-   ```bash
-   dnp3-time-sync --ip 192.168.1.100:20000
-   ```
+The binary will be located in the `target/release/` directory.
 
-## How It Works
+### Prebuilt Binaries
+Prebuilt binaries for Windows and Linux are available on the [Releases](https://github.com/ladderlogix/DNP3TimmingAttack/releases) page. You can download them directly instead of building the tool manually.
 
-1. The tool parses the desired timestamp from the command-line argument or prompts the user interactively.
-2. It establishes a TCP connection to the specified DNP3 outstation.
-3. A custom `AssociationHandler` provides the desired timestamp to the outstation.
-4. The tool sends a LAN time synchronization command to the outstation.
+## Usage
+Run the tool with the following command:
+```bash
+dnp3time --ip <outstation_ip:port> --time <YYYY-MM-DD HH:MM:SS>
+```
+
+Example:
+```bash
+dnp3time --ip 10.152.152.152:20000 --time "2023-11-12 14:23:00"
+```
+
+Alternatively, you can run the command interactively without the `--time` flag to input a timestamp at runtime:
+```bash
+dnp3time --ip 10.152.152.152:20000
+```
+
+### Arguments
+- `--ip` (`-i`): The IP address and port of the DNP3 outstation (default: `10.152.152.152:20000`).
+- `--time` (`-t`): The target date and time in the format `YYYY-MM-DD HH:MM:SS` (optional).
+
+### Example Workflow
+A typical use case involves specifying the outstation's IP address and port along with the desired timestamp. If the timestamp is omitted, the tool will prompt for it interactively. This makes the tool flexible for both pre-configured and ad-hoc time synchronization.
+
+## CI/CD Workflow
+This repository includes CI/CD pipelines via GitHub Actions for:
+- Building binaries for Windows and Linux.
+- Code signing for Windows binaries using **Azure Trusted Signing**.
+- Creating releases and publishing prebuilt binaries to GitHub Releases.
+- Publishing the crate to [crates.io](https://crates.io).
+
+See the GitHub Actions workflow file at `.github/workflows/main.yml` for more details.
 
 ## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the [AGPL-3.0](LICENSE).
 
 ## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
-
-## Acknowledgments
-
-This project uses the [dnp3](https://crates.io/crates/dnp3) crate for DNP3 protocol communication. Special thanks to the Rust community for their support and resources.
+Interested in contributing? See the [CONTRIBUTING.md](CONTRIBUTING.md) file for details.
