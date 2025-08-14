@@ -23,7 +23,7 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             binary_name: dnp3time.exe
-            asset_name: dnp3time.exe
+            asset_name: dnp3time-windows-x86_64.exe
 
     steps:
     - name: Checkout code
